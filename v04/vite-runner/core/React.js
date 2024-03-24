@@ -55,55 +55,63 @@ function workLoop(deadline) {
   requestIdleCallback(workLoop);
 }
 
+function createDom(fiber) {
+  return fiber.type === 'TEXT ELEMENT'
+    ? document.createTextNode('')
+    : document.createElement(fiber.type);
+}
 
-function performWorkOfUnit(work) {
-  // 1. 创建 element
-  if (!work.dom) {
-    const dom = (
-      work.dom =
-      work.type === 'TEXT ELEMENT'
-        ? document.createTextNode('')
-        : document.createElement(work.type)
-    )
+function updateProps(fiber, dom) {
+  Object.keys(fiber.props)
+    .filter(key => key !== 'children')
+    .forEach(key => {
+      dom[key] = fiber.props[key];
+    });
+}
 
-    work.parent.dom.append(dom);
-
-    // 2. 处理 props
-    Object.keys(work.props)
-      .filter(key => key !== 'children')
-      .forEach(key => {
-        dom[key] = work.props[key];
-      });
-  }
-
-  // 3 转换链表 设置指针
-  const children = work.props.children;
+function initChildren(fiber) {
+  const children = fiber.props.children;
   let prevChild = null;
   children.forEach((child, index) => {
-    const newWork = {
+    const newFiber = {
       type: child.type,
       props: child.props,
       child: null,
-      parent: work,
+      parent: fiber,
       sibling: null,
       dom: null,
     };
     if (index === 0) {
-      work.child = newWork;
+      fiber.child = newFiber;
     } else {
-      prevChild.sibling = newWork;
+      prevChild.sibling = newFiber;
     }
-    prevChild = newWork;
+    prevChild = newFiber;
   });
+}
+
+function performWorkOfUnit(fiber) {
+  if (!fiber.dom) {
+    // 1. 创建 element
+    const dom = (fiber.dom = createDom(fiber))
+
+    fiber.parent.dom.append(dom);
+
+    // 2. 处理 props
+    updateProps(fiber, dom);
+  }
+
+  // 3 转换链表 设置指针
+  initChildren(fiber);
 
   // 4.返回下一个要执行的任务
-  if (work.child) {
-    return work.child;
+  if (fiber.child) {
+    return fiber.child;
   }
-  if (work.sibling) {
-    return work.sibling;
+  if (fiber.sibling) {
+    return fiber.sibling;
   }
-  return work.parent?.sibling;
+  return fiber.parent?.sibling;
 }
 
 
@@ -116,3 +124,7 @@ const React = {
 };
 
 export default React;
+
+
+
+
