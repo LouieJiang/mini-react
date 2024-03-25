@@ -107,22 +107,30 @@ function initChildren(fiber, children) {
   });
 }
 
+function undateFunctionComponent(fiber) {
+  const children = [fiber.type(fiber.props)];
+  initChildren(fiber, children);
+}
+
+function undateHostComponent(fiber) {
+  if (!fiber.dom) {
+    // 1. 创建 element
+    const dom = (fiber.dom = createDom(fiber))
+
+    // 2. 处理 props
+    updateProps(fiber, dom);
+  }
+}
+
 function performWorkOfUnit(fiber) {
 
   const isFuntionComponent = typeof fiber.type === 'function';
-
-  if (!isFuntionComponent) {
-
-    if (!fiber.dom) {
-      // 1. 创建 element
-      const dom = (fiber.dom = createDom(fiber))
-
-      // fiber.parent.dom.append(dom);
-
-      // 2. 处理 props
-      updateProps(fiber, dom);
-    }
+  if (isFuntionComponent) {
+    undateFunctionComponent(fiber);
+  } else {
+    undateHostComponent(fiber)
   }
+
 
   // 3 转换链表 设置指针
   const children = isFuntionComponent ? [fiber.type(fiber.props)] : fiber.props.children;
