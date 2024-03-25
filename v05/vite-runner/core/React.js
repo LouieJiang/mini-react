@@ -18,21 +18,6 @@ function createElement(type, props, ...children) {
   };
 }
 
-// function render(element, container) {
-//   const _container = element.type === 'TEXT ELEMENT'
-//     ? document.createTextNode('')
-//     : document.createElement(element.type);
-
-//   Object.keys(element.props)
-//     .filter(key => key !== 'children')
-//     .forEach(key => {
-//       _container[key] = element.props[key];
-//     });
-
-//   const children = element.props.children;
-//   children.forEach(child => render(child, _container));
-//   container.append(_container);
-// }
 
 
 
@@ -43,8 +28,11 @@ function render(element, container) {
       children: [element],
     },
   };
+
+  root = nextWorkUnit;
 }
 
+let root = null
 let nextWorkUnit = null;
 function workLoop(deadline) {
   let shouldYield = false;
@@ -52,7 +40,25 @@ function workLoop(deadline) {
     nextWorkUnit = performWorkOfUnit(nextWorkUnit);
     shouldYield = deadline.timeRemaining() < 1;
   }
+
+  if (!nextWorkUnit && root) {
+    commitRoot();
+  }
+
   requestIdleCallback(workLoop);
+}
+
+function commitRoot() {
+  commitWork(root.child);
+  root = null;
+}
+
+function commitWork(fiber) {
+  if (!fiber) return;
+  fiber.parent.dom.append(fiber.dom);
+  commitWork(fiber.child);
+  commitWork(fiber.sibling);
+
 }
 
 function createDom(fiber) {
@@ -95,7 +101,7 @@ function performWorkOfUnit(fiber) {
     // 1. 创建 element
     const dom = (fiber.dom = createDom(fiber))
 
-    fiber.parent.dom.append(dom);
+    // fiber.parent.dom.append(dom);
 
     // 2. 处理 props
     updateProps(fiber, dom);

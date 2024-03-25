@@ -5,7 +5,7 @@
  */
 import React from './core/React.js';
 
-const App = <div>app991</div>
+const App = <div>app11</div>
 // function App() {
 //   return <div>app99</div>
 // }
