@@ -1,12 +1,23 @@
-// js pragma 
-/**
- * @jsx CReact.createElement
- * import CReact from './core/React.js';
- */
+
 import React from './core/React.js';
 
-const App = <div>app11</div>
-// function App() {
-//   return <div>app99</div>
-// }
+function Counter({ num }) {
+  return <div>num:{num}</div>
+}
+
+function CounterContainer() {
+  return <Counter num={10} />
+}
+
+function App() {
+  return (
+    <div>
+      app11
+      <Counter num={10} />
+      <Counter num={20} />
+    </div>
+  )
+}
+
+
 export default App;
