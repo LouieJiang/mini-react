@@ -21,9 +21,6 @@ function createElement(type, props, ...children) {
   };
 }
 
-
-
-
 function render(element, container) {
   nextWorkUnit = {
     dom: container,
@@ -36,6 +33,7 @@ function render(element, container) {
 }
 
 let root = null
+let currentRoot = null;
 let nextWorkUnit = null;
 function workLoop(deadline) {
   let shouldYield = false;
@@ -53,6 +51,7 @@ function workLoop(deadline) {
 
 function commitRoot() {
   commitWork(root.child);
+  currentRoot = root;
   root = null;
 }
 
@@ -62,6 +61,14 @@ function commitWork(fiber) {
   let fiberParent = fiber.parent;
   while (!fiberParent.dom) {
     fiberParent = fiberParent.parent;
+  }
+
+  if (fiber.effectTag === 'update') {
+    updateProps(fiber.dom, fiber.props, fiber.alternate?.props);
+  } else if (fiber.effectTag === 'placement') {
+    if (fiber.dom) {
+      fiberParent.dom.append(fiber.dom);
+    }
   }
 
   if (fiber.dom) {
@@ -79,30 +86,78 @@ function createDom(fiber) {
     : document.createElement(fiber.type);
 }
 
-function updateProps(fiber, dom) {
-  Object.keys(fiber.props)
-    .filter(key => key !== 'children')
-    .forEach(key => {
-      if (key.startsWith('on')) {
-        const eventName = key.slice(2).toLowerCase();
-        dom.addEventListener(eventName, fiber.props[key]);
-      } else {
-        dom[key] = fiber.props[key];
+function updateProps(dom, nextProps = {}, prevProps) {
+  // Object.keys(fiber.props)
+  //   .filter(key => key !== 'children')
+  //   .forEach(key => {
+  //     if (key.startsWith('on')) {
+  //       const eventName = key.slice(2).toLowerCase();
+  //       dom.addEventListener(eventName, fiber.props[key]);
+  //     } else {
+  //       dom[key] = fiber.props[key];
+  //     }
+  //   });
+
+  // 
+  Object.keys(prevProps).forEach(key => {
+    if (key !== 'children') {
+      if (!(key in nextProps)) {
+        dom.removeAttribute(key);
       }
-    });
+    }
+  })
+
+
+  Object.keys(nextProps).forEach(key => {
+    if (key !== 'children') {
+      if (nextProps[key] !== prevProps[key]) {
+        if (key.startsWith('on')) {
+          const eventName = key.slice(2).toLowerCase();
+          dom.removeEventListener(eventName, prevProps[key]);
+          dom.addEventListener(eventName, nextProps[key]);
+        } else {
+          dom[key] = nextProps[key];
+        }
+      }
+    }
+  })
 }
 
 function initChildren(fiber, children) {
+  let oldFiber = fiber.alternate?.child;
   let prevChild = null;
   children.forEach((child, index) => {
-    const newFiber = {
-      type: child.type,
-      props: child.props,
-      child: null,
-      parent: fiber,
-      sibling: null,
-      dom: null,
-    };
+
+    const sameType = oldFiber && child.type === oldFiber.type;
+
+    let newFiber = null;
+    if (sameType) {
+      newFiber = {
+        type: child.type,
+        props: child.props,
+        child: null,
+        parent: fiber,
+        sibling: null,
+        dom: oldFiber.dom,
+        effectTag: 'update',
+        alternate: oldFiber,
+      };
+    } else {
+      newFiber = {
+        type: child.type,
+        props: child.props,
+        child: null,
+        parent: fiber,
+        sibling: null,
+        dom: null,
+        effectTag: 'placement',
+      };
+    }
+
+    if (oldFiber) {
+      oldFiber = oldFiber.sibling;
+    }
+
     if (index === 0) {
       fiber.child = newFiber;
     } else {
@@ -123,7 +178,7 @@ function undateHostComponent(fiber) {
     const dom = (fiber.dom = createDom(fiber))
 
     // 2. 处理 props
-    updateProps(fiber, dom);
+    updateProps(dom, fiber.props, {});
   }
 }
 
@@ -161,11 +216,22 @@ function performWorkOfUnit(fiber) {
 }
 
 
+function update() {
+  nextWorkUnit = {
+    dom: currentRoot.dom,
+    props: currentRoot.props,
+    alternate: currentRoot,
+  };
+
+  root = nextWorkUnit;
+}
+
 requestIdleCallback(workLoop)
 
 
 const React = {
   render,
+  update,
   createElement,
 };
 
