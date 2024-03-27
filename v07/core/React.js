@@ -22,17 +22,17 @@ function createElement(type, props, ...children) {
 }
 
 function render(element, container) {
-  nextWorkUnit = {
+  wipRoot = {
     dom: container,
     props: {
       children: [element],
     },
   };
 
-  root = nextWorkUnit;
+  nextWorkUnit = wipRoot;
 }
 
-let root = null
+let wipRoot = null
 let currentRoot = null;
 let nextWorkUnit = null;
 function workLoop(deadline) {
@@ -42,7 +42,7 @@ function workLoop(deadline) {
     shouldYield = deadline.timeRemaining() < 1;
   }
 
-  if (!nextWorkUnit && root) {
+  if (!nextWorkUnit && wipRoot) {
     commitRoot();
   }
 
@@ -50,9 +50,9 @@ function workLoop(deadline) {
 }
 
 function commitRoot() {
-  commitWork(root.child);
-  currentRoot = root;
-  root = null;
+  commitWork(wipRoot.child);
+  currentRoot = wipRoot;
+  wipRoot = null;
 }
 
 function commitWork(fiber) {
@@ -123,7 +123,7 @@ function updateProps(dom, nextProps = {}, prevProps) {
   })
 }
 
-function initChildren(fiber, children) {
+function reconcileChildren(fiber, children) {
   let oldFiber = fiber.alternate?.child;
   let prevChild = null;
   children.forEach((child, index) => {
@@ -169,7 +169,7 @@ function initChildren(fiber, children) {
 
 function undateFunctionComponent(fiber) {
   const children = [fiber.type(fiber.props)];
-  initChildren(fiber, children);
+  reconcileChildren(fiber, children);
 }
 
 function undateHostComponent(fiber) {
@@ -194,7 +194,7 @@ function performWorkOfUnit(fiber) {
 
   // 3 转换链表 设置指针
   const children = isFuntionComponent ? [fiber.type(fiber.props)] : fiber.props.children;
-  initChildren(fiber, children);
+  reconcileChildren(fiber, children);
 
   // 4.返回下一个要执行的任务
   if (fiber.child) {
@@ -217,13 +217,12 @@ function performWorkOfUnit(fiber) {
 
 
 function update() {
-  nextWorkUnit = {
+  wipRoot = {
     dom: currentRoot.dom,
     props: currentRoot.props,
     alternate: currentRoot,
   };
-
-  root = nextWorkUnit;
+  nextWorkUnit = wipRoot;
 }
 
 requestIdleCallback(workLoop)
