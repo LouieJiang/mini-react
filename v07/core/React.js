@@ -83,7 +83,12 @@ function updateProps(fiber, dom) {
   Object.keys(fiber.props)
     .filter(key => key !== 'children')
     .forEach(key => {
-      dom[key] = fiber.props[key];
+      if (key.startsWith('on')) {
+        const eventName = key.slice(2).toLowerCase();
+        dom.addEventListener(eventName, fiber.props[key]);
+      } else {
+        dom[key] = fiber.props[key];
+      }
     });
 }
 
