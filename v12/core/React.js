@@ -36,10 +36,16 @@ let wipRoot = null
 let currentRoot = null;
 let nextWorkUnit = null;
 let deletions = []
+let wipFiber = null;
 function workLoop(deadline) {
   let shouldYield = false;
   while (!shouldYield && nextWorkUnit) {
     nextWorkUnit = performWorkOfUnit(nextWorkUnit);
+
+    if (wipRoot?.sibling?.type === nextWorkUnit?.type) {
+      nextWorkUnit = undefined
+    }
+
     shouldYield = deadline.timeRemaining() < 1;
   }
 
@@ -199,6 +205,7 @@ function reconcileChildren(fiber, children) {
 }
 
 function undateFunctionComponent(fiber) {
+  wipFiber = fiber;
   const children = [fiber.type(fiber.props)];
   reconcileChildren(fiber, children);
 }
@@ -248,12 +255,21 @@ function performWorkOfUnit(fiber) {
 
 
 function update() {
-  wipRoot = {
-    dom: currentRoot.dom,
-    props: currentRoot.props,
-    alternate: currentRoot,
-  };
-  nextWorkUnit = wipRoot;
+  let currentFiber = wipFiber;
+
+  return () => {
+    wipRoot = {
+      ...currentFiber,
+      alternate: currentFiber,
+    }
+    // wipRoot = {
+    //   dom: currentRoot.dom,
+    //   props: currentRoot.props,
+    //   alternate: currentRoot,
+    // };
+    nextWorkUnit = wipRoot;
+  }
+
 }
 
 requestIdleCallback(workLoop)
