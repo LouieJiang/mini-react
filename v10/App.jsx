@@ -3,17 +3,22 @@ import React from './core/React.js';
 
 let showBar = false;
 function Counter() {
-  const foo = <div>foo</div>
-  function Bar() {
-    return <p>bar</p>
-  }
+  const foo = (
+    <div>
+      foo
+      <div>child1</div>
+      <div>child2</div>
+    </div>
+  )
+
+  const bar = <div>bar</div>
   function handleShowBar() {
     showBar = !showBar;
     React.update();
   }
   return (
     <div >
-      {showBar ? <Bar></Bar> : foo}
+      {showBar ? bar : foo}
       <button onClick={handleShowBar}>click</button>
     </div>
   )
