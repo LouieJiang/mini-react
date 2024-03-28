@@ -1,19 +1,20 @@
 
 import React from './core/React.js';
 
-let count = 10
-let props = { id: 111111 }
-function Counter({ num }) {
-  function onClick() {
-    console.log('click')
-    count++
-    props = {}
-    React.update()
+let showBar = false;
+function Counter() {
+  const foo = <div>foo</div>
+  function Bar() {
+    return <p>bar</p>
+  }
+  function handleShowBar() {
+    showBar = !showBar;
+    React.update();
   }
   return (
-    <div {...props}>
-      count:{count}
-      <button onClick={onClick}>click</button>
+    <div >
+      {showBar ? <Bar></Bar> : foo}
+      <button onClick={handleShowBar}>click</button>
     </div>
   )
 }
