@@ -73,7 +73,7 @@ function commitEffectHooks() {
 
     if (!fiber.alternate) {
       fiber.effectHooks?.forEach(effectHook => {
-        effectHook.callback();
+        effectHook.cleanup = effectHook.callback();
       })
     } else {
       fiber.effectHooks?.forEach((newHook, index) => {
@@ -84,7 +84,7 @@ function commitEffectHooks() {
           const needUpate = oldEffectHook?.deps.some((oldDep, i) => {
             return oldDep !== newHook.deps[i]
           })
-          needUpate && newHook?.callback();
+          needUpate && (newHook.cleanup = newHook?.callback());
         }
       })
 
@@ -93,6 +93,21 @@ function commitEffectHooks() {
     run(fiber.child);
     run(fiber.sibling);
   }
+
+  function cleanup(fiber) {
+    if (!fiber) return
+
+    fiber.alternate?.effectHooks?.forEach(effectHook => {
+      if (effectHook.deps.length > 0) {
+
+        effectHook.cleanup && effectHook.cleanup();
+      }
+    })
+
+    cleanup(fiber.child);
+    cleanup(fiber.sibling);
+  }
+  cleanup(wipRoot)
   run(wipRoot)
 
 }
@@ -356,6 +371,7 @@ function useEffect(callback, deps) {
   const effectHook = {
     callback,
     deps,
+    cleanup: undefined,
   }
   effectHooks.push(effectHook)
   wipFiber.effectHooks = effectHooks
