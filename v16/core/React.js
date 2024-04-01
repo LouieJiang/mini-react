@@ -251,7 +251,7 @@ function reconcileChildren(fiber, children) {
   }
 }
 
-function undateFunctionComponent(fiber) {
+function updateFunctionComponent(fiber) {
   stateHooks = [];
   stateHooksIndex = 0
   effectHooks = []
@@ -260,7 +260,7 @@ function undateFunctionComponent(fiber) {
   reconcileChildren(fiber, children);
 }
 
-function undateHostComponent(fiber) {
+function updateHostComponent(fiber) {
   if (!fiber.dom) {
     // 1. 创建 element
     const dom = (fiber.dom = createDom(fiber))
@@ -274,9 +274,9 @@ function performWorkOfUnit(fiber) {
 
   const isFuntionComponent = typeof fiber.type === 'function';
   if (isFuntionComponent) {
-    undateFunctionComponent(fiber);
+    updateFunctionComponent(fiber);
   } else {
-    undateHostComponent(fiber)
+    updateHostComponent(fiber)
   }
 
 
